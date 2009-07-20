@@ -1,0 +1,11 @@
+port-deps
+=========
+
+Lists a dependency tree for a given macports package.
+
+
+License
+=======
+
+This software is distributed under the terms of the BSD License.
+
