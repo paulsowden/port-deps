@@ -15,23 +15,43 @@ glib2 has library dependencies on:
 	python_select
 """
 
+BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(30, 38)
+RESET_SEQ = "\033[0m"
+COLOR_SEQ = "\033[;%dm"
+BOLD_SEQ = "\033[1;%dm"
+
 indent = 0
 deps = set()
 
 def get_deps(package):
 	global indent
+	total = 0
+	to_install = 0
 	indent += 1
 	for dep in os.popen('port deps %s' % package):
 		if not dep.startswith('\t'): # dependencies are indented
 			continue
 		dep = dep.strip()
 		if dep not in deps:
-			print '  '*indent + dep
-			get_deps(dep)
+			deps.add(dep)
+			total += 1
+			color = COLOR_SEQ % GREEN
+			if os.popen('port installed %s' % dep).read().strip() == \
+					'None of the specified ports are installed.':
+				to_install += 1
+				color = BOLD_SEQ % RED
+			print '  '*indent + color + dep + RESET_SEQ
+			dep_total, dep_to_install = get_deps(dep)
+			total += dep_total
+			to_install += dep_to_install
 		else:
-			print '  '*indent + '*' + dep
-		deps.add(dep)
+			color = COLOR_SEQ % GREEN
+			if os.popen('port installed %s' % dep).read().strip() == \
+					'None of the specified ports are installed.':
+				color = COLOR_SEQ % RED
+			print '  '*indent + '*' + color + dep + RESET_SEQ
 	indent -= 1
+	return (total, to_install)
 
 if __name__ == '__main__':
 	if len(sys.argv) < 2:
@@ -39,5 +59,7 @@ if __name__ == '__main__':
 		sys.exit(0)
 	dep = sys.argv[1]
 	print dep
-	get_deps(dep)
+	total, to_install = get_deps(dep)
+	print
+	print '%d total dependencies, %d extra will be installed' % (total, to_install)
 
